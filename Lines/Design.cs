@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media;
+﻿using System.Windows.Media;
 using static Lines.Helper;
 
 namespace Lines
@@ -16,8 +11,10 @@ namespace Lines
 
         public static double CellBorderThinknessLength = 0.5d;
         public static Color CellBorderColor = Colors.Black;
-        public static bool CellBorderSnapToDevicePixelsFlag = true;
 
-        public static bool UseBorder = true;
+        public static double BallSizePercentage = 0.7d;
+
+        public static int zIndexDefault = 1;
+        public static int zIndexTop = 2;
     }
 }

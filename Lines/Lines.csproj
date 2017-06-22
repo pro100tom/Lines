@@ -55,7 +55,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BounceHelper.cs" />
     <Compile Include="Cell.cs" />
+    <Compile Include="CellHelper.cs" />
+    <Compile Include="LinesTimer.cs" />
+    <Compile Include="PathfindingHelper.cs" />
+    <Compile Include="Physics.cs" />
     <Compile Include="Settings.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

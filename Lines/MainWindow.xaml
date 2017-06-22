@@ -9,6 +9,7 @@
         WindowStyle="None" ResizeMode="NoResize"  
         WindowStartupLocation="CenterScreen" WindowState="Maximized"
         Loaded="Window_Loaded"
+        ContentRendered="Window_ContentRendered"
         PreviewKeyUp="Window_PreviewKeyUp">
     <Grid Margin="20">
         <UniformGrid Name="MainField" Background="AliceBlue" />

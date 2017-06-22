@@ -1,16 +1,15 @@
-﻿using System.Windows;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using static Lines.Helper;
 using static Lines.Design;
+using static Lines.Helper;
+using static Lines.CellHelper;
 using static Lines.Settings;
-using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using System;
-using System.Windows.Documents;
 
 namespace Lines
 {
@@ -25,7 +24,12 @@ namespace Lines
         {
             SquarizeField();
             AddCells(FieldSideCellCount);
-            SpawnFewRandomBalls();
+            //SetupNeighbours();
+        }
+
+        private void Window_ContentRendered(object sender, EventArgs e)
+        {
+            SpawnFewRandomBalls(SpawnBallQtyMin, SpawnBallQtyMax);
         }
 
         public void SquarizeField()
@@ -44,43 +48,11 @@ namespace Lines
             {
                 for (int j = 0; j < sideCellCount; j++)
                 {
-                    var ball = new Ellipse()
-                    {
-                        Margin = new Thickness(10.0d),
-                        Fill = new SolidColorBrush(Colors.AliceBlue),
-                        Stroke = new SolidColorBrush(Colors.Black),
-                        IsHitTestVisible = false,
-                        Width = 70,
-                        Height = 70,
-                        ClipToBounds = false,
-                    };
-
                     var cell = CreateCell();
-                    //cell.Children.Add(ball);
+                    var border = CreateBorder();
+                    border.Child = cell;
 
-                    cell.Name = "cell" + GetAllCells().Count().ToString();
-                    UIElement child = cell;
-
-                    if (UseBorder)
-                    {
-                        var border = new Border()
-                        {
-                            BorderThickness = new Thickness(CellBorderThinknessLength),
-                            BorderBrush = new SolidColorBrush(CellBorderColor),
-                            SnapsToDevicePixels = CellBorderSnapToDevicePixelsFlag,
-                        };
-
-                        border.Child = cell;
-                        child = border;
-                    }
-
-                    MainField.Children.Add(child);
-                    if (i == 0 && j == 0)
-                    {
-                        //var border = MainField.Children[0] as Border;
-                        //var cell2 = border.Child as Cell;
-                        //cell2.Children.Add(ball);
-                    }
+                    MainField.Children.Add(border);
                 }
             }
         }
@@ -93,14 +65,136 @@ namespace Lines
             cell.PreviewMouseLeftButtonDown += Cell_PreviewMouseLeftButtonDown;
             cell.PreviewMouseLeftButtonUp += Cell_PreviewMouseLeftButtonUp;
             cell.MouseLeave += Cell_MouseLeave;
+            cell.NotifyStateChanged += Cell_NotifyStateChanged;
+
+            cell.Name = CellPrefix + (GetAllCells().Count() + 1).ToString();
 
             return cell;
+        }
+
+        private Border CreateBorder()
+        {
+            var border = new Border()
+            {
+                BorderThickness = new Thickness(CellBorderThinknessLength),
+                BorderBrush = new SolidColorBrush(CellBorderColor),
+                SnapsToDevicePixels = true,
+            };
+
+            return border;
+        }
+
+        private void SetupNeighbours()
+        {
+            foreach (var cell in GetAllCells())
+            {
+                int index = GetCellNameIndex(cell.Name);
+                if (index == 0) { continue; }
+
+                var neighbourIndices = GetCellNeighbourIndices(index);
+                var neighbourNames = ConvertIndicesToNames(neighbourIndices);
+                cell.AddNeighbours(neighbourNames);
+            }
+        }
+
+        private void SpawnFewRandomBalls(int min, int max)
+        {
+            var cellNames = (from cell in GetAllCells()
+                             where !cell.HasBall
+                             select cell.Name).ToList();
+
+            if (!cellNames.Any()) { return; }
+
+            var result = GetBallSpawnQty(min, max);
+            for (int i = 0; i < result; i++)
+            {
+                var name = FetchRandomItem(cellNames);
+                SpawnBall(name);
+            }
+        }
+
+        private IEnumerable<Cell> GetAllCells()
+        {
+            var cells = from border in MainField.Children.OfType<Border>()
+                        select border.Child as Cell;
+
+            return cells;
+        }
+
+        private IEnumerable<Border> GetAllBorders()
+        {
+            var borders = from border in MainField.Children.OfType<Border>()
+                        select border as Border;
+
+            return borders;
+        }
+
+        private void SpawnBall(string cellName)
+        {
+            var cell = (from c in GetAllCells()
+                        where c.Name == cellName
+                        select c).SingleOrDefault();
+
+            if (cell == null || cell.HasBall) { return; }
+
+            var ball = CreateBall();
+
+            double ballWidth = cell.ActualWidth * BallSizePercentage;
+            double ballHeight = ballWidth;
+
+            double margin = GetBallDefaultMargin(cell.ActualWidth);
+            ball.Margin = new Thickness(margin);
+            ball.Width = ballWidth;
+            ball.Height = ballHeight;
+
+            cell.Children.Add(ball);
+        }
+
+        private double GetBallDefaultMargin(double cellWidth)
+        {
+            return (cellWidth - cellWidth * BallSizePercentage) / 2;
+        }
+
+        private Ellipse CreateBall()
+        {
+            var ball = new Ellipse()
+            {
+                Fill = new SolidColorBrush(Colors.AliceBlue),
+                Stroke = new SolidColorBrush(Colors.Black),
+                IsHitTestVisible = false,
+            };
+
+            return ball;
         }
 
         private void Cell_MouseEnter(object sender, MouseEventArgs e)
         {
             var cell = sender as Cell;
-            cell.Background = new SolidColorBrush(CellColorHover);
+            if (cell.CellState == CellState.Selected)
+            {
+                return;
+            }
+
+            ResetHoverCells();
+
+            cell.CellState = CellState.Hover;
+
+
+
+
+
+
+            /*cell.Background = new SolidColorBrush(CellColorHover);
+
+            foreach (var c in GetAllCells())
+            {
+                if (c.CellState == CellState.Hover)
+                {
+                    c.CellState = CellState.Idle;
+                }
+            }
+
+            cell.CellState = CellState.Hover;*/
         }
 
         private void Cell_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -114,100 +208,154 @@ namespace Lines
             var cell = sender as Cell;
             cell.Background = new SolidColorBrush(CellColorHover);
 
-            //Panel.SetZIndex(cell, 1);
-        }
-
-        private void SpawnFewRandomBalls()
-        {
-            var result = GetBallSpawnQty(SpawnBallQtyMin, SpawnBallQtyMax);
-            var cells = GetAllCells();
-            var cellsCopy = cells.ToList();
-
-            for (int i = 0; i < result; i++)
+            if (!cell.HasBall)
             {
-                var cell = FetchRandomItem(cellsCopy);
-                SpawnBall(cell.Name);
-            }
-        }
+                cell.CellState = CellState.Hover;
 
-        private IEnumerable<Cell> GetAllCells()
-        {
-            var result = from cell in MainField.Children.OfType<Cell>()
-                         select cell as Cell;
-
-            if (!result.Any())
-            {
-                result = from border in MainField.Children.OfType<Border>()
-                         select border.Child as Cell;
+                return;
             }
 
-            return result;
-        }
+            var ball = cell.Children[0] as Ellipse;
 
-        private void SpawnBall(string cellName)
-        {
-            var cell = (from c in GetAllCells()
-                        where c.Name == cellName
-                        select c).SingleOrDefault();
-
-            
-
-            var ball = CreateBall();
-
-            
-
-            
-
-            foreach (var border2 in MainField.Children.OfType<Border>())
+            if (cell.CellState == CellState.Selected)
             {
-                var cell3 = border2.Child as Cell;
-                if (cell3.Name == cellName)
-                {
-                    ball.Width = 0.65d * cell3.ActualWidth;
-                    ball.Height = ball.Width;
+                cell.CellState = CellState.Hover;
+                ball.BounceStop();
 
-                    double margin = (cell3.ActualWidth - ball.Width) / 2.0d;
-                    ball.Margin = new Thickness(margin);
-
-                    ball.Width = 50;
-                    ball.Height = 50;
-                    ball.Margin = new Thickness(2.0d);
-
-                    cell3.Children.Add(ball);
-                }
+                return;
             }
 
-            //cell.Children.Add(ball);
-            //var border = MainField.Children[0] as Border;
-            //var cell2 = border.Child as Cell;
-            //cell2.Children.Add(ball);
-        }
+            ResetAllCells();
 
-        private Ellipse CreateBall()
-        {
-            var ball = new Ellipse()
+            ball.BounceStart();
+            cell.CellState = CellState.Selected;
+
+
+
+
+
+
+
+            //ball.Margin = new Thickness(40);
+
+            /*foreach (var b in GetAllBorders())
             {
-                Margin = new Thickness(10.0d),
-                Fill = new SolidColorBrush(Colors.AliceBlue),
-                Stroke = new SolidColorBrush(Colors.Black),
-                IsHitTestVisible = false,
-                ClipToBounds = false,
-            };
+                Panel.SetZIndex(b, zIndexDefault);
+            }*/
 
-            return ball;
+            //Panel.SetZIndex(cell.Parent as Border, zIndexTop);
         }
 
         private void Cell_MouseLeave(object sender, MouseEventArgs e)
         {
             var cell = sender as Cell;
-            cell.Background = new SolidColorBrush(CellColorDefault);
+
+            switch (cell.CellState)
+            {
+                case CellState.Idle:
+                    break;
+                case CellState.Hover:
+                    cell.CellState = CellState.Idle;
+                    break;
+                case CellState.Path:
+                    break;
+                case CellState.Pressed:
+                    break;
+                case CellState.Selected:
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape)
+            if (e.Key == Key.Escape) { Close(); }
+        }
+
+        private void ResetCellsStatus()
+        {
+            foreach (var c in GetAllCells())
             {
-                Close();
+                c.CellState = CellState.Idle;
+            }
+        }
+
+        private void Cell_NotifyStateChanged(object sender)
+        {
+            UpdateCellsDisplay();
+        }
+
+        private bool DoesSelectedCellExist()
+        {
+            foreach (var c in GetAllCells())
+            {
+                if (c.CellState == CellState.Selected)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ResetHoverCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                if (c.CellState == CellState.Hover)
+                {
+                    c.CellState = CellState.Idle;
+                }
+            }
+        }
+
+        private void ResetSelectedCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                if (c.CellState == CellState.Selected)
+                {
+                    c.CellState = CellState.Idle;
+                }
+            }
+        }
+
+        private void ResetAllCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                c.CellState = CellState.Idle;
+            }
+        }
+
+        private void UpdateCellsDisplay()
+        {
+            foreach (var c in GetAllCells())
+            {
+                switch (c.CellState)
+                {
+                    case CellState.Idle:
+                        c.Background = new SolidColorBrush(CellColorDefault);
+                        break;
+                    case CellState.Hover:
+                        c.Background = new SolidColorBrush(CellColorHover);
+
+                        // check if we have a selected cell. if so, calculate path cells
+                        // shit, recursion...
+                        break;
+                    case CellState.Path:
+                        c.Background = new SolidColorBrush(Colors.Orange);
+                        break;
+                    case CellState.Pressed:
+                        c.Background = new SolidColorBrush(CellColorClick);
+                        break;
+                    case CellState.Selected:
+                        c.Background = new SolidColorBrush(CellColorHover);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }

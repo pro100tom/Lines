@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Lines
 {
+    public delegate void DefaultEventHandler(object sender);
+
     static class Helper
     {
         static Random random = new Random();
+        static DispatcherTimer timer = new DispatcherTimer();
 
         public static Color GetColor(string hex)
         {
@@ -31,6 +33,19 @@ namespace Lines
             collection.RemoveAt(result);
 
             return element;
+        }
+
+        public static T Dequeue<T>(this List<T> list)
+        {
+            T first = default(T);
+
+            if (list.Any())
+            {
+                first = list.FirstOrDefault();
+                list.RemoveAt(0);
+            }
+
+            return first;
         }
     }
 }
