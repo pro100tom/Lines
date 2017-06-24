@@ -59,6 +59,8 @@
     <Compile Include="Cell.cs" />
     <Compile Include="CellHelper.cs" />
     <Compile Include="LinesTimer.cs" />
+    <Compile Include="Node.cs" />
+    <Compile Include="NodeHelper.cs" />
     <Compile Include="PathfindingHelper.cs" />
     <Compile Include="Physics.cs" />
     <Compile Include="Settings.cs" />

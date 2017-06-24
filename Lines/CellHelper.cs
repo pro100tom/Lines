@@ -10,6 +10,9 @@ namespace Lines
 {
     static class CellHelper
     {
+        public static string CellPrefix = "cell";
+        public static char CellNameSeparator = '_';
+
         public static int GetCellNameIndex(string cellName)
         {
             int index = 0;
@@ -23,19 +26,31 @@ namespace Lines
             return index;
         }
 
+        public static List<int> GetCellNameIndices(IEnumerable<string> names)
+        {
+            var indices = new List<int>();
+
+            foreach (var name in names)
+            {
+                int index = GetCellNameIndex(name);
+                indices.Add(index);
+            }
+
+            return indices;
+        }
+
         public static List<int> GetCellNeighbourIndices(int currentIndex)
         {
             var list = new List<int>();
-            int cellCount = Convert.ToInt32(Math.Pow(FieldSideCellCount, 2));
 
             int left = currentIndex - 1;
-            if (!(left < 1 || left % FieldSideCellCount == 0))
+            if (!(left < 0 || left % FieldSideCellCount == 0))
             {
                 list.Add(left);
             }
 
             int right = currentIndex + 1;
-            if (!(right > cellCount || currentIndex % FieldSideCellCount == 0))
+            if (!(right >= FieldCellCount || currentIndex % FieldSideCellCount == 0))
             {
                 list.Add(right);
             }
@@ -47,7 +62,7 @@ namespace Lines
             }
 
             int bottom = currentIndex + FieldSideCellCount;
-            if (!(bottom > cellCount))
+            if (!(bottom > FieldCellCount))
             {
                 list.Add(bottom);
             }
@@ -73,14 +88,6 @@ namespace Lines
             }
 
             return names;
-        }
-
-        public static char CellNameSeparator
-        {
-            get
-            {
-                return '_';
-            }
         }
     }
 }

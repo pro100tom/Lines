@@ -10,6 +10,7 @@ using static Lines.Design;
 using static Lines.Helper;
 using static Lines.CellHelper;
 using static Lines.Settings;
+using static Lines.PathfindingHelper;
 
 namespace Lines
 {
@@ -24,7 +25,6 @@ namespace Lines
         {
             SquarizeField();
             AddCells(FieldSideCellCount);
-            //SetupNeighbours();
         }
 
         private void Window_ContentRendered(object sender, EventArgs e)
@@ -67,7 +67,7 @@ namespace Lines
             cell.MouseLeave += Cell_MouseLeave;
             cell.NotifyStateChanged += Cell_NotifyStateChanged;
 
-            cell.Name = CellPrefix + (GetAllCells().Count() + 1).ToString();
+            cell.Name = String.Join(CellNameSeparator.ToString(), CellPrefix, GetAllCells().Count().ToString());
 
             return cell;
         }
@@ -82,19 +82,6 @@ namespace Lines
             };
 
             return border;
-        }
-
-        private void SetupNeighbours()
-        {
-            foreach (var cell in GetAllCells())
-            {
-                int index = GetCellNameIndex(cell.Name);
-                if (index == 0) { continue; }
-
-                var neighbourIndices = GetCellNeighbourIndices(index);
-                var neighbourNames = ConvertIndicesToNames(neighbourIndices);
-                cell.AddNeighbours(neighbourNames);
-            }
         }
 
         private void SpawnFewRandomBalls(int min, int max)
@@ -170,31 +157,47 @@ namespace Lines
         private void Cell_MouseEnter(object sender, MouseEventArgs e)
         {
             var cell = sender as Cell;
-            if (cell.CellState == CellState.Selected)
-            {
-                return;
-            }
+            if (cell.CellState == CellState.Selected) { return; }
 
             ResetHoverCells();
 
-            cell.CellState = CellState.Hover;
-
-
-
-
-
-
-            /*cell.Background = new SolidColorBrush(CellColorHover);
-
-            foreach (var c in GetAllCells())
+            var flag = DoesSelectedCellExist();
+            if (!flag)
             {
-                if (c.CellState == CellState.Hover)
-                {
-                    c.CellState = CellState.Idle;
-                }
+                cell.CellState = CellState.Hover;
+
+                return;
             }
 
-            cell.CellState = CellState.Hover;*/
+            ResetPathCells();
+
+            var names = from c in GetAllCells()
+                        where !c.HasBall
+                        select c.Name;
+
+            var selectedCell = GetSelectedCell();
+            var selectedName = selectedCell.Name;
+            var selectedIndex = GetCellNameIndex(selectedName);
+
+            var currentName = cell.Name;
+            var currentIndex = GetCellNameIndex(currentName);
+
+            var indices = GetCellNameIndices(names);
+            var pathIndices = FindPath(selectedIndex, currentIndex, indices);
+
+
+            var pathNames = ConvertIndicesToNames(pathIndices);
+            var cells = from c in GetAllCells()
+                        where pathNames.Contains(c.Name)
+                        select c;
+
+            foreach (var c in cells)
+            {
+                c.CellState = CellState.Path;
+            }
+
+            selectedCell.CellState = CellState.Selected;
+            cell.CellState = CellState.Hover;
         }
 
         private void Cell_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -273,14 +276,6 @@ namespace Lines
             if (e.Key == Key.Escape) { Close(); }
         }
 
-        private void ResetCellsStatus()
-        {
-            foreach (var c in GetAllCells())
-            {
-                c.CellState = CellState.Idle;
-            }
-        }
-
         private void Cell_NotifyStateChanged(object sender)
         {
             UpdateCellsDisplay();
@@ -288,15 +283,19 @@ namespace Lines
 
         private bool DoesSelectedCellExist()
         {
-            foreach (var c in GetAllCells())
-            {
-                if (c.CellState == CellState.Selected)
-                {
-                    return true;
-                }
-            }
+            var selected = GetSelectedCell();
+            var exists = selected != null;
 
-            return false;
+            return exists;
+        }
+
+        private Cell GetSelectedCell()
+        {
+            var selected = (from c in GetAllCells()
+                            where c.CellState == CellState.Selected
+                            select c).SingleOrDefault();
+
+            return selected;
         }
 
         private void ResetHoverCells()
@@ -304,6 +303,17 @@ namespace Lines
             foreach (var c in GetAllCells())
             {
                 if (c.CellState == CellState.Hover)
+                {
+                    c.CellState = CellState.Idle;
+                }
+            }
+        }
+
+        private void ResetPathCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                if (c.CellState == CellState.Path)
                 {
                     c.CellState = CellState.Idle;
                 }
