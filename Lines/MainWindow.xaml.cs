@@ -30,6 +30,19 @@ namespace Lines
         private void Window_ContentRendered(object sender, EventArgs e)
         {
             SpawnFewRandomBalls(SpawnBallQtyMin, SpawnBallQtyMax);
+            /*SpawnBall("cell_0");
+            SpawnBall("cell_4");
+            SpawnBall("cell_6");
+            SpawnBall("cell_9");
+            SpawnBall("cell_10");
+            SpawnBall("cell_14");
+            SpawnBall("cell_15");
+            SpawnBall("cell_18");
+            SpawnBall("cell_19");
+            SpawnBall("cell_20");
+            SpawnBall("cell_24");*/
+
+            //var pathIndices = FindPath(0, 8, new List<int>() {0, 1, 2, 3, 5, 7, 8, 11, 12, 13, 16, 17, 21, 22, 23 });
         }
 
         public void SquarizeField()
@@ -93,7 +106,7 @@ namespace Lines
             if (!cellNames.Any()) { return; }
 
             var result = GetBallSpawnQty(min, max);
-            for (int i = 0; i < result; i++)
+            for (int i = 0; i < 50; i++)
             {
                 var name = FetchRandomItem(cellNames);
                 SpawnBall(name);
@@ -156,54 +169,85 @@ namespace Lines
 
         private void Cell_MouseEnter(object sender, MouseEventArgs e)
         {
-            var cell = sender as Cell;
-            if (cell.CellState == CellState.Selected) { return; }
+            var currentCell = sender as Cell;
 
-            ResetHoverCells();
-
-            var flag = DoesSelectedCellExist();
-            if (!flag)
+            // If we entered the same selected cell again...
+            if (currentCell.CellState == CellState.Selected)
             {
-                cell.CellState = CellState.Hover;
+                return;
+            }
 
+            // If we entered an empty cell and no other cell is selected...
+            var doesSelectedCellExist = DoesSelectedCellExist();
+            if (!doesSelectedCellExist)
+            {
+                currentCell.CellState = CellState.Hover;
                 return;
             }
 
             ResetPathCells();
-
-            var names = from c in GetAllCells()
-                        where !c.HasBall
-                        select c.Name;
+            ResetGhostCells();
+            ResetInaccessibleCells();
 
             var selectedCell = GetSelectedCell();
-            var selectedName = selectedCell.Name;
-            var selectedIndex = GetCellNameIndex(selectedName);
+            var selectedIndex = GetCellNameIndex(selectedCell.Name);
+            var currentIndex = GetCellNameIndex(currentCell.Name);
 
-            var currentName = cell.Name;
-            var currentIndex = GetCellNameIndex(currentName);
-
+            var names = (from c in GetAllCells()
+                         where !c.HasBall || c.Name == selectedCell.Name || c.Name == currentCell.Name
+                         select c.Name).ToList();
             var indices = GetCellNameIndices(names);
             var pathIndices = FindPath(selectedIndex, currentIndex, indices);
-
-
             var pathNames = ConvertIndicesToNames(pathIndices);
-            var cells = from c in GetAllCells()
+            var pathCells = from c in GetAllCells()
                         where pathNames.Contains(c.Name)
                         select c;
 
-            foreach (var c in cells)
+            // Now we assume that we have a selected cell somewhere
+            // and we are entering a non empty cell.
+            if (currentCell.HasBall)
             {
-                c.CellState = CellState.Path;
+                foreach (var c in pathCells)
+                {
+                    c.CellState = CellState.Path;
+                    c.Ghost = true;
+                }
+
+                selectedCell.Ghost = true;
+            }
+            else
+            {
+                bool pathFound = pathCells.Contains(currentCell);
+                if (pathFound)
+                {
+                    // We still assume we have a selected cell somewhere
+                    // and we are entering an empty cell which is accessible.
+                    foreach (var c in pathCells)
+                    {
+                        c.CellState = CellState.Path;
+                    }
+                }
+                else
+                {
+                    // Same as above but we are entering an empty cell which is not accessible.
+                    foreach (var c in pathCells)
+                    {
+                        c.CellState = CellState.Path;
+                    }
+
+                    currentCell.Accessible = false;
+                }
             }
 
             selectedCell.CellState = CellState.Selected;
-            cell.CellState = CellState.Hover;
+            currentCell.CellState = CellState.Hover;
         }
 
         private void Cell_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var cell = sender as Cell;
-            cell.Background = new SolidColorBrush(CellColorClick);
+
+            cell.CellState = CellState.Pressed;
         }
 
         private void Cell_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -331,6 +375,22 @@ namespace Lines
             }
         }
 
+        private void ResetInaccessibleCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                c.Accessible = true;
+            }
+        }
+
+        private void ResetGhostCells()
+        {
+            foreach (var c in GetAllCells())
+            {
+                c.Ghost = false;
+            }
+        }
+
         private void ResetAllCells()
         {
             foreach (var c in GetAllCells())
@@ -346,22 +406,19 @@ namespace Lines
                 switch (c.CellState)
                 {
                     case CellState.Idle:
-                        c.Background = new SolidColorBrush(CellColorDefault);
+                        c.Background = new SolidColorBrush(CellColorIdle);
                         break;
                     case CellState.Hover:
-                        c.Background = new SolidColorBrush(CellColorHover);
-
-                        // check if we have a selected cell. if so, calculate path cells
-                        // shit, recursion...
+                        c.Background = new SolidColorBrush(c.Accessible ? CellColorHover : CellColorInaccessible);
                         break;
                     case CellState.Path:
-                        c.Background = new SolidColorBrush(Colors.Orange);
+                        c.Background = new SolidColorBrush(c.Ghost ? CellColorGhost : CellColorPath);
                         break;
                     case CellState.Pressed:
-                        c.Background = new SolidColorBrush(CellColorClick);
+                        c.Background = new SolidColorBrush(c.Accessible ? CellColorPressed : CellColorInaccessiblePressed);
                         break;
                     case CellState.Selected:
-                        c.Background = new SolidColorBrush(CellColorHover);
+                        c.Background = new SolidColorBrush(c.Ghost ? CellColorSelectedGhost : CellColorSelected);
                         break;
                     default:
                         break;

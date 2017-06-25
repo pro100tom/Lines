@@ -5,9 +5,15 @@ namespace Lines
 {
     static class Design
     {
-        public static Color CellColorDefault = GetColor("#DDDDDD");
-        public static Color CellColorHover = GetColor("#BEE6FD");
-        public static Color CellColorClick = GetColor("#C4E5F6");
+        public static Color CellColorIdle = GetColor("#DDDDDD");
+        public static Color CellColorHover = GetColor("#b0e0fb");
+        public static Color CellColorPressed = GetColor("#a1d9f8");
+        public static Color CellColorSelected = GetColor("#b0e0fb");
+        public static Color CellColorPath = GetColor("#D4EFFF");
+        public static Color CellColorGhost = GetColor("#d9e9f2");
+        public static Color CellColorSelectedGhost = GetColor("#c0d7e4");
+        public static Color CellColorInaccessible = GetColor("#fbb0b0");
+        public static Color CellColorInaccessiblePressed = GetColor("#faa6a6");
 
         public static double CellBorderThinknessLength = 0.5d;
         public static Color CellBorderColor = Colors.Black;

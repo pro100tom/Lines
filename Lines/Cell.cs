@@ -17,14 +17,14 @@ namespace Lines
     {
         public event DefaultEventHandler NotifyStateChanged;
         CellState state;
-        //HashSet<string> neighbourCellNames;
+        bool accessible, ghost;
 
         public Cell()
         {
-            Background = new SolidColorBrush(CellColorDefault);
+            Background = new SolidColorBrush(CellColorIdle);
             Margin = new Thickness(0.01d);
             state = CellState.Idle;
-            //neighbourCellNames = new HashSet<string>();
+            accessible = true;
         }
 
         public bool HasBall
@@ -32,19 +32,6 @@ namespace Lines
             get
             {
                 return Children.OfType<Ellipse>().Any();
-            }
-        }
-
-        public void AddNeighbour(string name)
-        {
-            //neighbourCellNames.Add(name);
-        }
-
-        public void AddNeighbours(List<string> names)
-        {
-            foreach (string name in names)
-            {
-                AddNeighbour(name);
             }
         }
 
@@ -57,13 +44,36 @@ namespace Lines
 
             set
             {
-                if (state == value)
-                {
-                    return;
-                }
+                if (state == value) { return; }
 
                 state = value;
                 NotifyStateChanged(this);
+            }
+        }
+
+        public bool Accessible
+        {
+            get
+            {
+                return accessible;
+            }
+
+            set
+            {
+                accessible = value;
+            }
+        }
+
+        public bool Ghost
+        {
+            get
+            {
+                return ghost;
+            }
+
+            set
+            {
+                ghost = value;
             }
         }
     }

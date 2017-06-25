@@ -15,7 +15,9 @@ namespace Lines
 
         public static Color GetColor(string hex)
         {
-            return (Color)ColorConverter.ConvertFromString(hex);
+            var color = (Color)ColorConverter.ConvertFromString(hex);
+
+            return color;
         }
 
         public static int GetBallSpawnQty(int min, int max)
@@ -46,6 +48,11 @@ namespace Lines
             }
 
             return first;
+        }
+
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> source)
+        {
+            return new HashSet<T>(source);
         }
     }
 }

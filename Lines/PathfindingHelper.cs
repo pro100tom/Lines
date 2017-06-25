@@ -12,9 +12,9 @@ namespace Lines
         static List<Node> nodes;
         static int rowCount;
 
-        static HashSet<Node> closeList, openList;
+        static List<Node> closeList, openList;
 
-        private static int movementCost = 10;
+        private static int movementCost = 1;
 
         static PathfindingHelper()
         {
@@ -25,8 +25,8 @@ namespace Lines
 
         public static void ResetLists()
         {
-            closeList = new HashSet<Node>();
-            openList = new HashSet<Node>();
+            closeList = new List<Node>();
+            openList = new List<Node>();
             nodes = new List<Node>();
         }
 
@@ -44,8 +44,8 @@ namespace Lines
             var indices = new List<int>();
             PerformSearch(startPointIndex, targetPointIndex);
 
-            var targetNode = FindNode(targetPointIndex);
-            var currentNode = targetNode;
+            var currentNode = FindNode(targetPointIndex);
+            if (currentNode.Parent == null) { return indices; }
 
             while (currentNode.Index != startPointIndex)
             {
@@ -67,10 +67,14 @@ namespace Lines
             currentNode.Heuristic = heuristic;
 
             closeList.Add(currentNode);
+            closeList = closeList.Distinct().ToList();
 
             var neighbours = GetNeighbours(currentNode);
             neighbours = neighbours.Where(n => !closeList.Select(i => i.Index).Contains(n.Index)).ToList();
-            openList.UnionWith(neighbours);
+            openList.AddRange(neighbours);
+            openList = openList.Except(closeList).Distinct().ToList();
+
+            if (!openList.Any()) { return null; }
 
             if (openList.Contains(targetNode))
             {
@@ -85,15 +89,28 @@ namespace Lines
                 {
                     neighbour.Parent = currentNode;
                 }
-                
+
                 heuristic = CalculateHeuristicValue(neighbour.GetIndex2D(), targetNode.GetIndex2D());
                 neighbour.Heuristic = heuristic;
                 neighbour.Movement = neighbour.Parent.Movement + movementCost;
             }
 
-            var closest = neighbours.Aggregate((one, two) => one.Heuristic < two.Heuristic ? one : two);
+            var cheapest = GetCheapest(openList);
 
-            return PerformSearch(closest.Index, targetNode.Index);
+            return PerformSearch(cheapest.Index, targetNode.Index);
+        }
+
+        public static Node GetCheapest(List<Node> nodes)
+        {
+            var cheapestF = nodes.Min(n => n.F);
+            var cheapestNodes = (from n in nodes
+                                where n.F == cheapestF
+                                select n).ToList();
+
+            cheapestNodes = cheapestNodes.OrderBy(n => n.Index).ToList();
+            var cheapest = cheapestNodes.First();
+
+            return cheapest;
         }
 
         public static Node FindNode(int index)
@@ -142,15 +159,6 @@ namespace Lines
                 neighbours.Add(topNode);
             }
 
-            if (index2D.Item1 < rowCount - 1)
-            {
-                var bottomIndex2D = Tuple.Create(index2D.Item1 + 1, index2D.Item2);
-                int index = ConvertTo1DIndex(bottomIndex2D);
-                var bottomNode = FindNode(index);
-
-                neighbours.Add(bottomNode);
-            }
-
             if (index2D.Item2 > 0)
             {
                 var leftIndex2D = Tuple.Create(index2D.Item1, index2D.Item2 - 1);
@@ -169,8 +177,17 @@ namespace Lines
                 neighbours.Add(rightNode);
             }
 
+            if (index2D.Item1 < rowCount - 1)
+            {
+                var bottomIndex2D = Tuple.Create(index2D.Item1 + 1, index2D.Item2);
+                int index = ConvertTo1DIndex(bottomIndex2D);
+                var bottomNode = FindNode(index);
+
+                neighbours.Add(bottomNode);
+            }
+
             neighbours.RemoveAll(n => n == null);
-            //neighbours = neighbours.OrderBy(n => n.Index).ToList();
+            neighbours = neighbours.OrderBy(n => n.Index).ToList();
 
             return neighbours;
         }
