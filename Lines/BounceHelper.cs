@@ -12,15 +12,19 @@ namespace Lines
 {
     static class BounceHelper
     {
+        public static event DefaultEventHandler NotifyBounceStopped;
         static Dictionary<Ellipse, LinesTimer> timerDictionary = new Dictionary<Ellipse, LinesTimer>();
 
-        public static void BounceStart(this Ellipse ellipse)
+        public static void BounceStart(this Ellipse ellipse, bool stopOthers = true)
         {
-            foreach (var item in timerDictionary)
+            if (stopOthers)
             {
-                if (item.Value.IsEnabled)
+                foreach (var item in timerDictionary)
                 {
-                    item.Value.ScheduleStop();
+                    if (item.Value.IsEnabled)
+                    {
+                        item.Value.ScheduleStop();
+                    }
                 }
             }
 
@@ -57,6 +61,7 @@ namespace Lines
                             if (timerLocal.ShallStop)
                             {
                                 timerLocal.Stop();
+                                NotifyBounceStopped?.Invoke(ellipse);
                             }
                         }
                     }

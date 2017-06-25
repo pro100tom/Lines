@@ -20,14 +20,6 @@ namespace Lines
             return color;
         }
 
-        public static int GetBallSpawnQty(int min, int max)
-        {
-            Random random = new Random();
-            var result = random.Next(min, max + 1);
-
-            return result;
-        }
-
         public static T FetchRandomItem<T>(IList<T> collection)
         {
             var result = random.Next(0, collection.Count());

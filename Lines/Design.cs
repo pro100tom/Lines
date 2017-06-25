@@ -7,7 +7,7 @@ namespace Lines
     {
         public static Color CellColorIdle = GetColor("#DDDDDD");
         public static Color CellColorHover = GetColor("#b0e0fb");
-        public static Color CellColorPressed = GetColor("#a1d9f8");
+        public static Color CellColorPressed = GetColor("#a5daf7");
         public static Color CellColorSelected = GetColor("#b0e0fb");
         public static Color CellColorPath = GetColor("#D4EFFF");
         public static Color CellColorGhost = GetColor("#d9e9f2");
@@ -20,7 +20,7 @@ namespace Lines
 
         public static double BallSizePercentage = 0.7d;
 
-        public static int zIndexDefault = 1;
-        public static int zIndexTop = 2;
+        public static int ZIndexDefault = 1;
+        public static int ZIndexTop = 2;
     }
 }

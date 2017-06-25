@@ -55,14 +55,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BallHelper.cs" />
     <Compile Include="BounceHelper.cs" />
     <Compile Include="Cell.cs" />
     <Compile Include="CellHelper.cs" />
     <Compile Include="LinesTimer.cs" />
+    <Compile Include="MoveHelper.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="NodeHelper.cs" />
     <Compile Include="PathfindingHelper.cs" />
     <Compile Include="Physics.cs" />
+    <Compile Include="Registry.cs" />
     <Compile Include="Settings.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

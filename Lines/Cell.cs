@@ -35,6 +35,20 @@ namespace Lines
             }
         }
 
+        public Ellipse GetBall()
+        {
+            return HasBall ? Children.OfType<Ellipse>().First() : null;
+        }
+
+        public void RemoveBall()
+        {
+            if (HasBall)
+            {
+                var ball = GetBall();
+                Children.Remove(ball);
+            }
+        }
+
         internal CellState CellState
         {
             get

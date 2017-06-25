@@ -54,6 +54,7 @@ namespace Lines
             }
 
             indices.Add(startPointIndex);
+            indices.Reverse();
 
             return indices;
         }
