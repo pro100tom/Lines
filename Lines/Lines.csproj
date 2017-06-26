@@ -65,7 +65,6 @@
     <Compile Include="NodeHelper.cs" />
     <Compile Include="PathfindingHelper.cs" />
     <Compile Include="Physics.cs" />
-    <Compile Include="Registry.cs" />
     <Compile Include="Settings.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

@@ -16,23 +16,10 @@ namespace Lines
     {
         public static event DefaultEventHandler NotifyMoveStopped;
         static Dictionary<Ellipse, DispatcherTimer> timerDictionary = new Dictionary<Ellipse, DispatcherTimer>();
-        static bool readyToMove;
-        static List<int> indices;
+        public static bool AllowMove;
 
-        public static void ScheduleMove(List<int> indices)
+        public static void Move(this Ellipse ellipse, List<int> indices, double unitDistance)
         {
-            readyToMove = true;
-        }
-
-        public static void Move(this Ellipse ellipse, Direction direction, double distance)
-        {
-            if (!readyToMove)
-            {
-                return;
-            }
-
-            readyToMove = false;
-
             timerDictionary[ellipse] = new DispatcherTimer();
 
             var timer = timerDictionary[ellipse];
@@ -41,7 +28,7 @@ namespace Lines
 
             timer.Tick += (sender, args) =>
             { 
-                if (margin.Left >= distance - step)
+                if (margin.Left >= unitDistance - step)
                 {
                     NotifyMoveStopped(ellipse);
                     timer.Stop();

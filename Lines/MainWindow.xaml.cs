@@ -13,7 +13,6 @@ using static Lines.Settings;
 using static Lines.PathfindingHelper;
 using static Lines.BounceHelper;
 using static Lines.MoveHelper;
-using static Lines.Registry;
 using static Lines.BallHelper;
 
 namespace Lines
@@ -88,7 +87,7 @@ namespace Lines
             cell.MouseLeave += Cell_MouseLeave;
             cell.NotifyStateChanged += Cell_NotifyStateChanged;
 
-            cell.Name = String.Join(CellNameSeparator.ToString(), CellPrefix, GetAllCells().Count().ToString());
+            cell.Name = String.Join(CellNameSeparator.ToString(), CellPrefix, AllCells.Count().ToString());
 
             return cell;
         }
@@ -107,7 +106,7 @@ namespace Lines
 
         private void SpawnFewRandomBalls(int min, int max)
         {
-            var cellNames = (from cell in GetAllCells()
+            var cellNames = (from cell in AllCells
                              where !cell.HasBall
                              select cell.Name).ToList();
 
@@ -121,12 +120,13 @@ namespace Lines
             }
         }
 
-        private IEnumerable<Cell> GetAllCells()
+        private IEnumerable<Cell> AllCells
         {
-            var cells = from border in MainField.Children.OfType<Border>()
-                        select border.Child as Cell;
-
-            return cells;
+            get
+            {
+                return from border in MainField.Children.OfType<Border>()
+                       select border.Child as Cell;
+            }
         }
 
         private IEnumerable<Border> GetAllBorders()
@@ -139,7 +139,7 @@ namespace Lines
 
         private void SpawnBall(string cellName)
         {
-            var cell = (from c in GetAllCells()
+            var cell = (from c in AllCells
                         where c.Name == cellName
                         select c).SingleOrDefault();
 
@@ -189,17 +189,15 @@ namespace Lines
             var selectedIndex = GetCellNameIndex(selectedCell.Name);
             var currentIndex = GetCellNameIndex(currentCell.Name);
 
-            var names = (from c in GetAllCells()
+            var names = (from c in AllCells
                          where !c.HasBall || c.Name == selectedCell.Name || c.Name == currentCell.Name
                          select c.Name).ToList();
             var indices = GetCellNameIndices(names);
             var pathIndices = FindPath(selectedIndex, currentIndex, indices);
             var pathNames = ConvertIndicesToNames(pathIndices);
-            var pathCells = from c in GetAllCells()
-                        where pathNames.Contains(c.Name)
+            var pathCells = from c in AllCells
+                            where pathNames.Contains(c.Name)
                         select c;
-
-            RegistryItems["indices"] = pathIndices;
 
             // Now we assume that we have a selected cell somewhere
             // and we are entering a non empty cell.
@@ -272,12 +270,8 @@ namespace Lines
                         var selectedCellBall = selectedCell.GetBall();
                         selectedCellBall.BounceStop();
 
-                        var indices = RegistryItems["indices"] as List<int>;
-
-                        RegistryItems["selected_cell"] = selectedCell;
-                        RegistryItems["current_cell"] = currentCell;
-
-                        ScheduleMove(indices);
+                        LastAccessedCell = currentCell;
+                        AllowMove = true;
                     }
                     else
                     {
@@ -290,9 +284,9 @@ namespace Lines
                 return;
             }
 
+            // Now we assume current cell does have a ball.
             var currentBall = currentCell.GetBall();
 
-            // Now we assume current cell does have a ball.
             if (selectedCell == null)
             {
                 currentCell.CellState = CellState.Selected;
@@ -343,6 +337,43 @@ namespace Lines
             }
         }
 
+        private void BringBallOnTop(Cell cell)
+        {
+            foreach (var b in GetAllBorders())
+            {
+                Panel.SetZIndex(b, ZIndexDefault);
+            }
+
+            Panel.SetZIndex(cell.Parent as Border, ZIndexTop);
+        }
+
+        private void MainWindow_NotifyBounceStopped(object sender)
+        {
+            if (!AllowMove) { return; }
+
+            AllowMove = false;
+
+            var ellipse = sender as Ellipse;
+            var selectedCell = ellipse.Parent as Cell;
+            BringBallOnTop(selectedCell);
+
+            ellipse.Move(Indices, selectedCell.ActualWidth);
+        }
+
+        private void MainWindow_NotifyMoveStopped(object sender)
+        {
+            var ellipse = sender as Ellipse;
+            var selectedCell = ellipse.Parent as Cell;
+            var currentCell = GetCurrentCell();
+            var defaultMargin = GetBallDefaultMargin(currentCell.ActualWidth);
+
+            var ball = selectedCell.GetBall();
+            ball.Margin = new Thickness(defaultMargin);
+
+            selectedCell.RemoveBall();
+            currentCell.Children.Add(ball);
+        }
+
         private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape) { Close(); }
@@ -361,9 +392,14 @@ namespace Lines
             return exists;
         }
 
+        private Cell GetCurrentCell()
+        {
+            return LastAccessedCell;
+        }
+
         private Cell GetSelectedCell()
         {
-            var selected = (from c in GetAllCells()
+            var selected = (from c in AllCells
                             where c.CellState == CellState.Selected
                             select c).SingleOrDefault();
 
@@ -372,7 +408,7 @@ namespace Lines
 
         private void ResetHoverCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 if (c.CellState == CellState.Hover)
                 {
@@ -383,7 +419,7 @@ namespace Lines
 
         private void ResetPathCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 if (c.CellState == CellState.Path)
                 {
@@ -394,7 +430,7 @@ namespace Lines
 
         private void ResetSelectedCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 if (c.CellState == CellState.Selected)
                 {
@@ -405,7 +441,7 @@ namespace Lines
 
         private void ResetInaccessibleCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 c.Accessible = true;
             }
@@ -413,7 +449,7 @@ namespace Lines
 
         private void ResetGhostCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 c.Ghost = false;
             }
@@ -421,7 +457,7 @@ namespace Lines
 
         private void ResetAllCells()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 c.CellState = CellState.Idle;
                 c.Accessible = true;
@@ -431,7 +467,7 @@ namespace Lines
 
         private void UpdateCellsDisplay()
         {
-            foreach (var c in GetAllCells())
+            foreach (var c in AllCells)
             {
                 switch (c.CellState)
                 {
@@ -451,39 +487,6 @@ namespace Lines
                         break;
                 }
             }
-        }
-
-        private void BringBallOnTop(Cell cell)
-        {
-            foreach (var b in GetAllBorders())
-            {
-                Panel.SetZIndex(b, ZIndexDefault);
-            }
-
-            Panel.SetZIndex(cell.Parent as Border, ZIndexTop);
-        }
-
-        private void MainWindow_NotifyBounceStopped(object sender)
-        {
-            var ellipse = sender as Ellipse;
-
-            var selectedCell = ellipse.Parent as Cell;
-            BringBallOnTop(selectedCell);
-            
-            ellipse.Move(Direction.Right, selectedCell.ActualWidth);
-        }
-
-        private void MainWindow_NotifyMoveStopped(object sender)
-        {
-            var selectedCell = RegistryItems["selected_cell"] as Cell;
-            var currentCell = RegistryItems["current_cell"] as Cell;
-            var defaultMargin = GetBallDefaultMargin(currentCell.ActualWidth);
-
-            var ball = selectedCell.GetBall();
-            ball.Margin = new Thickness(defaultMargin);
-
-            selectedCell.RemoveBall();
-            currentCell.Children.Add(ball);
         }
     }
 }

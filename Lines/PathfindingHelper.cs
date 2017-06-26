@@ -11,8 +11,15 @@ namespace Lines
     {
         static List<Node> nodes;
         static int rowCount;
-
         static List<Node> closeList, openList;
+
+        public static List<int> Indices
+        {
+            get
+            {
+                return (from n in nodes select n.Index).ToList();
+            }
+        }
 
         private static int movementCost = 1;
 

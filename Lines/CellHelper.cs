@@ -12,11 +12,12 @@ namespace Lines
     {
         public static string CellPrefix = "cell";
         public static char CellNameSeparator = '_';
+        public static Cell LastAccessedCell = null;
 
         public static int GetCellNameIndex(string cellName)
         {
             int index = 0;
-
+            
             var parts = cellName.Split(CellNameSeparator);
             if (parts.Any())
             {
