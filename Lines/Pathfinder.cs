@@ -5,33 +5,21 @@ using static Lines.Settings;
 
 namespace Lines
 {
-    class Pathfinder
+    static class Pathfinder
     {
-        static Pathfinder instance = new Pathfinder();
-        //public event DefaultEventHandler NotifyPathFound;
-        List<Node> nodes;
-        int rowCount = FieldSideCellCount;
-        List<Node> closeList, openList;
-        int movementCost = 1;
+        static List<Node> nodes;
+        static int rowCount = FieldSideCellCount;
+        static List<Node> closeList, openList;
+        static int movementCost = 1;
 
-        private Pathfinder()
-        {
-
-        }
-
-        static Pathfinder()
-        {
-
-        }
-
-        public void ResetLists()
+        public static void ResetLists()
         {
             closeList = new List<Node>();
             openList = new List<Node>();
             nodes = new List<Node>();
         }
 
-        public List<int> FindPath(int startPointIndex, int targetPointIndex, List<int> cellIndices)
+        public static List<int> FindPath(int startPointIndex, int targetPointIndex, List<int> cellIndices)
         {
             ResetLists();
 
@@ -57,12 +45,10 @@ namespace Lines
             indices.Add(startPointIndex);
             indices.Reverse();
 
-            //NotifyPathFound?.Invoke(indices);
-
             return indices;
         }
 
-        private List<Node> PerformSearch(int startPointIndex, int targetPointIndex)
+        private static List<Node> PerformSearch(int startPointIndex, int targetPointIndex)
         {
             var currentNode = FindNode(startPointIndex);
             var targetNode = FindNode(targetPointIndex);
@@ -104,7 +90,7 @@ namespace Lines
             return PerformSearch(cheapest.Index, targetNode.Index);
         }
 
-        public Node GetCheapest(List<Node> nodes)
+        public static Node GetCheapest(List<Node> nodes)
         {
             var cheapestF = nodes.Min(n => n.F);
             var cheapestNodes = (from n in nodes
@@ -117,12 +103,12 @@ namespace Lines
             return cheapest;
         }
 
-        private Node FindNode(int index)
+        private static Node FindNode(int index)
         {
             return nodes.Where(n => n.Index == index).SingleOrDefault();
         }
 
-        public int CalculateHeuristicValue(Tuple<int, int> startPoint, Tuple<int, int> targetPoint)
+        public static int CalculateHeuristicValue(Tuple<int, int> startPoint, Tuple<int, int> targetPoint)
         {
             int x = Math.Abs(targetPoint.Item1 - startPoint.Item1);
             int y = Math.Abs(targetPoint.Item2 - startPoint.Item2);
@@ -131,7 +117,7 @@ namespace Lines
             return heuristic;
         }
 
-        public List<Node> GetNeighbours(Node node)
+        private static List<Node> GetNeighbours(Node node)
         {
             var neighbours = new List<Node>();
             var index2D = node.Index.GetIndex2D();
@@ -176,14 +162,6 @@ namespace Lines
             neighbours = neighbours.OrderBy(n => n.Index).ToList();
 
             return neighbours;
-        }
-
-        public static Pathfinder Instance
-        {
-            get
-            {
-                return instance;
-            }
         }
     }
 }

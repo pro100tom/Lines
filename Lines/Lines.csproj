@@ -56,17 +56,17 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BallSpawnController.cs" />
-    <Compile Include="BallBounceController.cs" />
+    <Compile Include="BallBounceEventManager.cs" />
+    <Compile Include="BalSizeEventManager.cs" />
     <Compile Include="Cell.cs" />
     <Compile Include="CellHelper.cs" />
     <Compile Include="GlobalStuff.cs" />
     <Compile Include="LinesTimer.cs" />
-    <Compile Include="MovementCalculator.cs" />
+    <Compile Include="MovementEventManager.cs" />
     <Compile Include="MovementHelper.cs" />
     <Compile Include="MovementInfo.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="Pathfinder.cs" />
-    <Compile Include="PathHistoryManager.cs" />
     <Compile Include="Physics.cs" />
     <Compile Include="Registry.cs" />
     <Compile Include="Settings.cs" />

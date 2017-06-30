@@ -6,6 +6,9 @@ namespace Lines
 {
     static class BallSpawnController
     {
+        private static readonly Random random = new Random();
+        private static readonly object syncLock = new object();
+
         public static Ellipse CreateBall()
         {
             var ball = new Ellipse()
@@ -20,10 +23,12 @@ namespace Lines
 
         public static int GetBallSpawnQty(int min, int max)
         {
-            Random random = new Random();
-            var result = random.Next(min, max + 1);
+            lock (syncLock)
+            {
+                var result = random.Next(min, max + 1);
 
-            return result;
+                return result;
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Windows.Threading;
 
 namespace Lines
 {
-    static class MovementCalculator
+    static class MovementEventManager
     {
         public static event DefaultEventHandler NotifyMoveCompleted;
         public static event MovementEventHandler NotifyStepMade;

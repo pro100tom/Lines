@@ -6,11 +6,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using static Lines.BallBounceController;
+using static Lines.BallBounceEventManager;
 using static Lines.BallSpawnController;
 using static Lines.CellHelper;
 using static Lines.Design;
-using static Lines.MovementCalculator;
+using static Lines.MovementEventManager;
 using static Lines.Settings;
 using static Lines.MovementHelper;
 
@@ -111,10 +111,14 @@ namespace Lines
                              where !cell.HasBall
                              select cell.Name).ToList();
 
-            if (!cellNames.Any()) { return; }
-
             var result = GetBallSpawnQty(min, max);
-            for (int i = 0; i < 80; i++)
+
+            if (cellNames.Count() < result)
+            {
+                return;
+            }
+
+            for (int i = 0; i < result; i++)
             {
                 var name = cellNames.FetchRandomItem();
                 SpawnBall(name);
@@ -153,15 +157,25 @@ namespace Lines
 
             double margin = GetBallDefaultMargin(cell.ActualWidth);
             ball.Margin = new Thickness(margin);
-            ball.Width = ballWidth;
-            ball.Height = ballHeight;
+            //ball.Width = ballWidth;
+            //ball.Height = ballHeight;
 
             cell.Children.Add(ball);
+
+            ball.Grow(ballWidth, cell.ActualWidth);
         }
 
         private double GetBallDefaultMargin(double cellWidth)
         {
-            return (cellWidth - cellWidth * BallSizePercentage) / 2;
+            var ballWidth = cellWidth * BallSizePercentage;
+            var margin = GetBallMargin(cellWidth, ballWidth);
+            
+            return margin;
+        }
+
+        private double GetBallMargin(double cellWidth, double ballWidth)
+        {
+            return (cellWidth - ballWidth) / 2;
         }
 
         private void Cell_MouseEnter(object sender, MouseEventArgs e)
@@ -199,7 +213,7 @@ namespace Lines
                          where !c.HasBall || c.Name == selectedCell.Name || c.Name == currentCell.Name
                          select c.Name).ToList();
             var indices = GetCellNameIndices(names);
-            var pathIndices = Pathfinder.Instance.FindPath(selectedIndex, currentIndex, indices);
+            var pathIndices = Pathfinder.FindPath(selectedIndex, currentIndex, indices);
             var pathNames = ConvertIndicesToNames(pathIndices);
             var pathCells = from c in AllCells
                             where pathNames.Contains(c.Name)
@@ -418,6 +432,8 @@ namespace Lines
             if (!movementInfoList.Any())
             {
                 Registry.PutItem("lock", false);
+                SpawnFewRandomBalls(SpawnBallQtyMin, SpawnBallQtyMax);
+
                 return;
             }
 

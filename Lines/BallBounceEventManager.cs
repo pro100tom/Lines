@@ -7,7 +7,7 @@ using static Lines.Physics;
 
 namespace Lines
 {
-    static class BallBounceController
+    static class BallBounceEventManager
     {
         public static event DefaultEventHandler NotifyBounceFinished;
         static Dictionary<Ellipse, LinesTimer> timerDictionary = new Dictionary<Ellipse, LinesTimer>();
@@ -59,6 +59,8 @@ namespace Lines
                             {
                                 timerLocal.Stop();
                                 NotifyBounceFinished?.Invoke(ellipse);
+
+                                return;
                             }
                         }
                     }
