@@ -2,9 +2,9 @@
 {
     static class Settings
     {
-        public static int FieldSideCellCount = 11;
-        public static int FieldCellCount = FieldSideCellCount * FieldSideCellCount;
-        public static int SpawnBallQtyMin = 3;
-        public static int SpawnBallQtyMax = 3;
+        public static int FieldSideCellCount { get { return 11; } }
+        public static int FieldCellCount { get { return FieldSideCellCount * FieldSideCellCount; } }
+        public static int SpawnBallQtyMin { get { return 3; } }
+        public static int SpawnBallQtyMax { get { return 3; } }
     }
 }

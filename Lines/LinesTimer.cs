@@ -20,15 +20,8 @@ namespace Lines
 
         public bool ShallStop
         {
-            get
-            {
-                return shallStop;
-            }
-
-            private set
-            {
-                shallStop = value;
-            }
+            get { return shallStop; }
+            private set { shallStop = value; }
         }
     }
 }

@@ -6,14 +6,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using static Lines.Design;
-using static Lines.Helper;
+using static Lines.BallBounceController;
+using static Lines.BallSpawnController;
 using static Lines.CellHelper;
+using static Lines.Design;
+using static Lines.MovementCalculator;
 using static Lines.Settings;
-using static Lines.PathfindingHelper;
-using static Lines.BounceHelper;
-using static Lines.MoveHelper;
-using static Lines.BallHelper;
+using static Lines.MovementHelper;
 
 namespace Lines
 {
@@ -29,15 +28,17 @@ namespace Lines
             SquarizeField();
             AddCells(FieldSideCellCount);
 
-            NotifyBounceStopped += MainWindow_NotifyBounceStopped;
-            NotifyMoveStopped += MainWindow_NotifyMoveStopped;
+            NotifyBounceFinished += MainWindow_NotifyBounceFinished;
+
+            NotifyStepMade += MainWindow_NotifyStepMade;
+            NotifyMoveCompleted += MainWindow_NotifyMoveCompleted;
         }
 
         private void Window_ContentRendered(object sender, EventArgs e)
         {
             SpawnFewRandomBalls(SpawnBallQtyMin, SpawnBallQtyMax);
-            
-            /*SpawnBall("cell_0");
+
+            /*SpawnBall("cell_11");
             SpawnBall("cell_4");
             SpawnBall("cell_6");
             SpawnBall("cell_9");
@@ -113,9 +114,9 @@ namespace Lines
             if (!cellNames.Any()) { return; }
 
             var result = GetBallSpawnQty(min, max);
-            for (int i = 0; i < result; i++)
+            for (int i = 0; i < 80; i++)
             {
-                var name = FetchRandomItem(cellNames);
+                var name = cellNames.FetchRandomItem();
                 SpawnBall(name);
             }
         }
@@ -165,10 +166,15 @@ namespace Lines
 
         private void Cell_MouseEnter(object sender, MouseEventArgs e)
         {
+            if (Registry.DoesContainKey("lock") && (bool)Registry.GetItem("lock"))
+            {
+                return;
+            }
+
             var currentCell = sender as Cell;
 
             // If we entered the same selected cell again...
-            if (currentCell.CellState == CellState.Selected)
+            if (currentCell.State == CellState.Selected)
             {
                 return;
             }
@@ -177,27 +183,29 @@ namespace Lines
             var doesSelectedCellExist = DoesSelectedCellExist();
             if (!doesSelectedCellExist)
             {
-                currentCell.CellState = CellState.Hover;
+                currentCell.State = CellState.Hover;
                 return;
             }
 
-            ResetPathCells();
+            ResetCells(CellState.Path);
             ResetGhostCells();
             ResetInaccessibleCells();
 
             var selectedCell = GetSelectedCell();
-            var selectedIndex = GetCellNameIndex(selectedCell.Name);
-            var currentIndex = GetCellNameIndex(currentCell.Name);
+            var selectedIndex = GetCellIndex(selectedCell.Name);
+            var currentIndex = GetCellIndex(currentCell.Name);
 
             var names = (from c in AllCells
                          where !c.HasBall || c.Name == selectedCell.Name || c.Name == currentCell.Name
                          select c.Name).ToList();
             var indices = GetCellNameIndices(names);
-            var pathIndices = FindPath(selectedIndex, currentIndex, indices);
+            var pathIndices = Pathfinder.Instance.FindPath(selectedIndex, currentIndex, indices);
             var pathNames = ConvertIndicesToNames(pathIndices);
             var pathCells = from c in AllCells
                             where pathNames.Contains(c.Name)
                         select c;
+
+            Registry.PutItem("indices", pathIndices);
 
             // Now we assume that we have a selected cell somewhere
             // and we are entering a non empty cell.
@@ -205,7 +213,7 @@ namespace Lines
             {
                 foreach (var c in pathCells)
                 {
-                    c.CellState = CellState.Path;
+                    c.State = CellState.Path;
                     c.Ghost = true;
                 }
 
@@ -220,7 +228,7 @@ namespace Lines
                     // and we are entering an empty cell which is accessible.
                     foreach (var c in pathCells)
                     {
-                        c.CellState = CellState.Path;
+                        c.State = CellState.Path;
                     }
                 }
                 else
@@ -228,54 +236,68 @@ namespace Lines
                     // Same as above but we are entering an empty cell which is not accessible.
                     foreach (var c in pathCells)
                     {
-                        c.CellState = CellState.Path;
+                        c.State = CellState.Path;
                     }
 
                     currentCell.Accessible = false;
                 }
             }
 
-            selectedCell.CellState = CellState.Selected;
-            currentCell.CellState = CellState.Hover;
+            selectedCell.State = CellState.Selected;
+            currentCell.State = CellState.Hover;
         }
 
         private void Cell_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (Registry.DoesContainKey("lock") && (bool)Registry.GetItem("lock"))
+            {
+                return;
+            }
+
             var cell = sender as Cell;
             cell.Background = new SolidColorBrush(cell.Accessible ? CellColorPressed : CellColorInaccessiblePressed);
         }
 
         private void Cell_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (Registry.DoesContainKey("lock") && (bool)Registry.GetItem("lock"))
+            {
+                return;
+            }
+
             var currentCell = sender as Cell;
             var selectedCell = GetSelectedCell();
 
+            Registry.PutItem("allow_move_calls", false);
+
             if (currentCell.Accessible)
             {
-                ResetPathCells();
+                ResetCells(CellState.Path);
                 ResetGhostCells();
-                ResetSelectedCells();
+                ResetCells(CellState.Selected);
             }
 
             if (!currentCell.HasBall)
             {
                 if (selectedCell == null)
                 {
-                    currentCell.CellState = CellState.Hover;
+                    currentCell.State = CellState.Hover;
                 }
                 else
                 {
                     if (currentCell.Accessible)
                     {
                         var selectedCellBall = selectedCell.GetBall();
-                        selectedCellBall.BounceStop();
+                       
+                        Registry.PutItem("active_ball", selectedCellBall);
+                        Registry.PutItem("current_cell", currentCell);
+                        Registry.PutItem("allow_move_calls", true);
 
-                        LastAccessedCell = currentCell;
-                        AllowMove = true;
+                        selectedCellBall.BounceStop(true);
                     }
                     else
                     {
-                        currentCell.CellState = CellState.Hover;
+                        currentCell.State = CellState.Hover;
                     }
                 }
 
@@ -286,10 +308,10 @@ namespace Lines
 
             // Now we assume current cell does have a ball.
             var currentBall = currentCell.GetBall();
-
+            
             if (selectedCell == null)
             {
-                currentCell.CellState = CellState.Selected;
+                currentCell.State = CellState.Selected;
                 currentBall.BounceStart();
             }
             else
@@ -297,17 +319,17 @@ namespace Lines
                 if (currentCell == selectedCell)
                 {
                     // We get here when we click on the selected cell again.
-                    currentCell.CellState = CellState.Hover;
+                    currentCell.State = CellState.Hover;
                     var ball = currentCell.GetBall();
-                    ball.BounceStop();
+                    ball.BounceStop(true);
                 }
                 else
                 {
                     // We get here when we have a selected cell but click on another one with the ball.
                     var selectedBall = selectedCell.GetBall();
-                    selectedBall.BounceStop();
-                    
-                    currentCell.CellState = CellState.Selected;
+                    selectedBall.BounceStop(true);
+
+                    currentCell.State = CellState.Selected;
                     currentBall.BounceStart();
                 }
             }
@@ -319,12 +341,12 @@ namespace Lines
         {
             var cell = sender as Cell;
 
-            switch (cell.CellState)
+            switch (cell.State)
             {
                 case CellState.Idle:
                     break;
                 case CellState.Hover:
-                    cell.CellState = CellState.Idle;
+                    cell.State = CellState.Idle;
                     break;
                 case CellState.Path:
                     break;
@@ -337,6 +359,139 @@ namespace Lines
             }
         }
 
+        private void MainWindow_NotifyBounceFinished(object sender)
+        {
+            var activeBall = sender as Ellipse;
+            RestoreDefaultMargin(activeBall);
+
+            if (Registry.DoesContainKey("allow_move_calls") && !(bool)Registry.GetItem("allow_move_calls"))
+            {
+                return;
+            }
+
+            Registry.PutItem("allow_move_calls", false);
+
+            var activeBallCell = activeBall.Parent as Cell;
+
+            var indices = Registry.GetItem("indices") as List<int>;
+            if (!indices.Any())
+            {
+                return;
+            }
+
+            var movementInfoList = GetMovementInfoList(indices);
+            if (!movementInfoList.Any())
+            {
+                return;
+            }
+
+            Registry.PutItem("movement_info_list", movementInfoList);
+
+            Move(activeBallCell);
+        }
+
+        private void MainWindow_NotifyMoveCompleted(object sender)
+        {
+            var activeBall = Registry.GetItem("active_ball") as Ellipse;
+            var activeBallCell = activeBall.Parent as Cell;
+
+            var currentStagingCell = Registry.GetItem("staging_cell") as Cell;
+            if (currentStagingCell == null)
+            {
+                currentStagingCell = Registry.GetItem("current_cell") as Cell;
+                if (currentStagingCell == null)
+                {
+                    return;
+                }
+            }
+
+            PassBallToAnotherCell(activeBallCell, currentStagingCell);
+
+            Move(currentStagingCell);
+        }
+
+        private void Move(Cell currentCell)
+        {
+            Registry.PutItem("lock", true);
+
+            var movementInfoList = Registry.GetItem("movement_info_list") as List<MovementInfo>;
+            if (!movementInfoList.Any())
+            {
+                Registry.PutItem("lock", false);
+                return;
+            }
+
+            var movementInfoItem = movementInfoList.Dequeue();
+            Registry.PutItem("movement_info_list", movementInfoList);
+
+            var currentIndex = GetCellIndex(currentCell.Name);
+            var nextStagingCell = GetNextStagingCell(currentIndex, movementInfoItem);
+            if (nextStagingCell == null)
+            {
+                return;
+            }
+
+            Registry.PutItem("staging_cell", nextStagingCell);
+
+            var activeBall = Registry.GetItem("active_ball") as Ellipse;
+            double coordinate = activeBall.Margin.Left;
+            double step = 30.0d;
+            double threshold = movementInfoItem.StepNumber * currentCell.ActualWidth - step;
+
+            BringBallOnTop(currentCell);
+            StartMovementTimer(coordinate, step, threshold, movementInfoItem.Direction);
+        }
+
+        private void PassBallToAnotherCell(Cell cellWithBall, Cell targetCell)
+        {
+            var ball = cellWithBall.GetBall();
+            RestoreDefaultMargin(ball);
+
+            var cell = ball.Parent as Cell;
+            cell.Children.Clear();
+
+            targetCell.Children.Add(ball);
+        }
+
+        private void RestoreDefaultMargin(Ellipse ball)
+        {
+            Canvas.SetLeft(ball, 0);
+            Canvas.SetRight(ball, 0);
+            Canvas.SetTop(ball, 0);
+            Canvas.SetBottom(ball, 0);
+
+            var cell = ball.Parent as Cell;
+            var defaultBallMargin = GetBallDefaultMargin(cell.ActualWidth);
+            ball.Margin = new Thickness(defaultBallMargin);
+        }
+
+        private Cell GetNextStagingCell(int currentIndex, MovementInfo movementInfo)
+        {
+            var stagingCellIndex = GetIndexByOffset(currentIndex, movementInfo.Direction, movementInfo.StepNumber, FieldSideCellCount);
+            var stagingCelName = GetCellName(stagingCellIndex);
+            var stagingCell = GetCell(stagingCelName);
+
+            return stagingCell;
+        }
+
+        private void MainWindow_NotifyStepMade(double coordinate, Direction direction)
+        {
+            var activeBall = Registry.GetItem("active_ball") as Ellipse;
+            var margin = activeBall.Margin;
+
+            if (direction == Direction.Left || direction == Direction.Right)
+            {
+                Canvas.SetLeft(activeBall, coordinate);
+                Canvas.SetRight(activeBall, coordinate);
+            }
+            else
+            {
+                Canvas.SetTop(activeBall, coordinate);
+                Canvas.SetBottom(activeBall, coordinate);
+            }
+        }
+
+
         private void BringBallOnTop(Cell cell)
         {
             foreach (var b in GetAllBorders())
@@ -347,41 +502,33 @@ namespace Lines
             Panel.SetZIndex(cell.Parent as Border, ZIndexTop);
         }
 
-        private void MainWindow_NotifyBounceStopped(object sender)
-        {
-            if (!AllowMove) { return; }
-
-            AllowMove = false;
-
-            var ellipse = sender as Ellipse;
-            var selectedCell = ellipse.Parent as Cell;
-            BringBallOnTop(selectedCell);
-
-            ellipse.Move(Indices, selectedCell.ActualWidth);
-        }
-
-        private void MainWindow_NotifyMoveStopped(object sender)
-        {
-            var ellipse = sender as Ellipse;
-            var selectedCell = ellipse.Parent as Cell;
-            var currentCell = GetCurrentCell();
-            var defaultMargin = GetBallDefaultMargin(currentCell.ActualWidth);
-
-            var ball = selectedCell.GetBall();
-            ball.Margin = new Thickness(defaultMargin);
-
-            selectedCell.RemoveBall();
-            currentCell.Children.Add(ball);
-        }
-
-        private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape) { Close(); }
-        }
-
         private void Cell_NotifyStateChanged(object sender)
         {
             UpdateCellsDisplay();
+        }
+
+        private void UpdateCellsDisplay()
+        {
+            foreach (var c in AllCells)
+            {
+                switch (c.State)
+                {
+                    case CellState.Idle:
+                        c.Background = new SolidColorBrush(CellColorIdle);
+                        break;
+                    case CellState.Hover:
+                        c.Background = new SolidColorBrush(c.Accessible ? CellColorHover : CellColorInaccessible);
+                        break;
+                    case CellState.Path:
+                        c.Background = new SolidColorBrush(c.Ghost ? CellColorGhost : CellColorPath);
+                        break;
+                    case CellState.Selected:
+                        c.Background = new SolidColorBrush(c.Ghost ? CellColorSelectedGhost : CellColorSelected);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private bool DoesSelectedCellExist()
@@ -392,49 +539,31 @@ namespace Lines
             return exists;
         }
 
-        private Cell GetCurrentCell()
-        {
-            return LastAccessedCell;
-        }
-
         private Cell GetSelectedCell()
         {
             var selected = (from c in AllCells
-                            where c.CellState == CellState.Selected
+                            where c.State == CellState.Selected
                             select c).SingleOrDefault();
 
             return selected;
         }
 
-        private void ResetHoverCells()
+        private Cell GetCell(string name)
         {
-            foreach (var c in AllCells)
-            {
-                if (c.CellState == CellState.Hover)
-                {
-                    c.CellState = CellState.Idle;
-                }
-            }
+            var cell = (from c in AllCells
+                      where c.Name == name
+                      select c).SingleOrDefault();
+
+            return cell;
         }
 
-        private void ResetPathCells()
+        private void ResetCells(CellState cellState)
         {
             foreach (var c in AllCells)
             {
-                if (c.CellState == CellState.Path)
+                if (c.State == cellState)
                 {
-                    c.CellState = CellState.Idle;
-                }
-            }
-        }
-
-        private void ResetSelectedCells()
-        {
-            foreach (var c in AllCells)
-            {
-                if (c.CellState == CellState.Selected)
-                {
-                    c.CellState = CellState.Idle;
+                    c.State = CellState.Idle;
                 }
             }
         }
@@ -459,34 +588,15 @@ namespace Lines
         {
             foreach (var c in AllCells)
             {
-                c.CellState = CellState.Idle;
+                c.State = CellState.Idle;
                 c.Accessible = true;
                 c.Ghost = false;
             }
         }
 
-        private void UpdateCellsDisplay()
+        private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
-            foreach (var c in AllCells)
-            {
-                switch (c.CellState)
-                {
-                    case CellState.Idle:
-                        c.Background = new SolidColorBrush(CellColorIdle);
-                        break;
-                    case CellState.Hover:
-                        c.Background = new SolidColorBrush(c.Accessible ? CellColorHover : CellColorInaccessible);
-                        break;
-                    case CellState.Path:
-                        c.Background = new SolidColorBrush(c.Ghost ? CellColorGhost : CellColorPath);
-                        break;
-                    case CellState.Selected:
-                        c.Background = new SolidColorBrush(c.Ghost ? CellColorSelectedGhost : CellColorSelected);
-                        break;
-                    default:
-                        break;
-                }
-            }
+            if (e.Key == Key.Escape) { Close(); }
         }
     }
 }

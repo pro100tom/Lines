@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lines
 {
@@ -28,11 +25,11 @@ namespace Lines
             return steps;
         }
 
-        public static readonly double g = 20.0d;
+        public static double G { get { return 20.0d; } }
 
         public static double CalculateFreeFallDistance(double time)
         {
-            return g * Math.Pow(time, 2.0d) / 2;
+            return G * Math.Pow(time, 2.0d) / 2;
         }
     }
 }

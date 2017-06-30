@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -23,17 +19,11 @@ namespace Lines
         {
             Background = new SolidColorBrush(CellColorIdle);
             Margin = new Thickness(0.01d);
-            state = CellState.Idle;
-            accessible = true;
+            State = CellState.Idle;
+            Accessible = true;
         }
 
-        public bool HasBall
-        {
-            get
-            {
-                return Children.OfType<Ellipse>().Any();
-            }
-        }
+        public bool HasBall { get { return Children.OfType<Ellipse>().Any(); } }
 
         public Ellipse GetBall()
         {
@@ -49,46 +39,29 @@ namespace Lines
             }
         }
 
-        internal CellState CellState
+        internal CellState State
         {
-            get
-            {
-                return state;
-            }
+            get { return state; }
 
             set
             {
                 if (state == value) { return; }
 
                 state = value;
-                NotifyStateChanged(this);
+                NotifyStateChanged?.Invoke(this);
             }
         }
 
         public bool Accessible
         {
-            get
-            {
-                return accessible;
-            }
-
-            set
-            {
-                accessible = value;
-            }
+            get { return accessible; }
+            set { accessible = value; }
         }
 
         public bool Ghost
         {
-            get
-            {
-                return ghost;
-            }
-
-            set
-            {
-                ghost = value;
-            }
+            get { return ghost; }
+            set { ghost = value; }
         }
     }
 }

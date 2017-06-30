@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using static Lines.Settings;
 
@@ -10,14 +8,14 @@ namespace Lines
 {
     static class CellHelper
     {
-        public static string CellPrefix = "cell";
-        public static char CellNameSeparator = '_';
-        public static Cell LastAccessedCell = null;
+        public static string CellPrefix { get { return "cell"; } }
 
-        public static int GetCellNameIndex(string cellName)
+        public static char CellNameSeparator { get { return '_'; } }
+
+        public static int GetCellIndex(string cellName)
         {
             int index = 0;
-            
+
             var parts = cellName.Split(CellNameSeparator);
             if (parts.Any())
             {
@@ -33,7 +31,7 @@ namespace Lines
 
             foreach (var name in names)
             {
-                int index = GetCellNameIndex(name);
+                int index = GetCellIndex(name);
                 indices.Add(index);
             }
 
@@ -73,7 +71,7 @@ namespace Lines
             return list;
         }
 
-        public static string ConvertIndexToName(int index)
+        public static string GetCellName(int index)
         {
             return String.Join(CellNameSeparator.ToString(), CellPrefix, index.ToString());
         }
@@ -84,7 +82,7 @@ namespace Lines
 
             foreach (int index in indices)
             {
-                var name = ConvertIndexToName(index);
+                var name = GetCellName(index);
                 names.Add(name);
             }
 

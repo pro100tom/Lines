@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 using static Lines.Physics;
 
 namespace Lines
 {
-    static class BounceHelper
+    static class BallBounceController
     {
-        public static event DefaultEventHandler NotifyBounceStopped;
+        public static event DefaultEventHandler NotifyBounceFinished;
         static Dictionary<Ellipse, LinesTimer> timerDictionary = new Dictionary<Ellipse, LinesTimer>();
 
         public static void BounceStart(this Ellipse ellipse, bool stopOthers = true)
@@ -61,7 +58,7 @@ namespace Lines
                             if (timerLocal.ShallStop)
                             {
                                 timerLocal.Stop();
-                                NotifyBounceStopped?.Invoke(ellipse);
+                                NotifyBounceFinished?.Invoke(ellipse);
                             }
                         }
                     }
@@ -79,7 +76,7 @@ namespace Lines
             timer.Start();
         }
 
-        public static void BounceStop(this Ellipse ellipse)
+        public static void BounceStop(this Ellipse ellipse, bool immediately)
         {
             if (!timerDictionary.Any() || !timerDictionary.ContainsKey(ellipse)) { return; }
 
@@ -87,7 +84,15 @@ namespace Lines
 
             if (ellipse.IsBouncing())
             {
-                timer.ScheduleStop();
+                if (immediately)
+                {
+                    timer.Stop();
+                    NotifyBounceFinished?.Invoke(ellipse);
+                }
+                else
+                {
+                    timer.ScheduleStop();
+                }
             }
         }
 
