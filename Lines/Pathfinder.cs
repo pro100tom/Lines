@@ -53,7 +53,7 @@ namespace Lines
             var currentNode = FindNode(startPointIndex);
             var targetNode = FindNode(targetPointIndex);
 
-            int heuristic = CalculateHeuristicValue(currentNode.Index.GetIndex2D(), targetNode.Index.GetIndex2D());
+            int heuristic = CalculateHeuristicValue(currentNode.Index.ToIndex2D(), targetNode.Index.ToIndex2D());
             currentNode.Heuristic = heuristic;
 
             closeList.Add(currentNode);
@@ -80,7 +80,7 @@ namespace Lines
                     neighbour.Parent = currentNode;
                 }
 
-                heuristic = CalculateHeuristicValue(neighbour.Index.GetIndex2D(), targetNode.Index.GetIndex2D());
+                heuristic = CalculateHeuristicValue(neighbour.Index.ToIndex2D(), targetNode.Index.ToIndex2D());
                 neighbour.Heuristic = heuristic;
                 neighbour.Movement = neighbour.Parent.Movement + movementCost;
             }
@@ -120,12 +120,12 @@ namespace Lines
         private static List<Node> GetNeighbours(Node node)
         {
             var neighbours = new List<Node>();
-            var index2D = node.Index.GetIndex2D();
+            var index2D = node.Index.ToIndex2D();
 
             if (index2D.Item1 > 0)
             {
                 var topIndex2D = Tuple.Create(index2D.Item1 - 1, index2D.Item2);
-                int index = topIndex2D.GetIndex1D();
+                int index = topIndex2D.ToIndex1D();
                 var topNode = FindNode(index);
 
                 neighbours.Add(topNode);
@@ -134,7 +134,7 @@ namespace Lines
             if (index2D.Item2 > 0)
             {
                 var leftIndex2D = Tuple.Create(index2D.Item1, index2D.Item2 - 1);
-                int index = leftIndex2D.GetIndex1D();
+                int index = leftIndex2D.ToIndex1D();
                 var leftNode = FindNode(index);
 
                 neighbours.Add(leftNode);
@@ -143,7 +143,7 @@ namespace Lines
             if (index2D.Item2 < rowCount - 1)
             {
                 var rightIndex2D = Tuple.Create(index2D.Item1, index2D.Item2 + 1);
-                int index = rightIndex2D.GetIndex1D();
+                int index = rightIndex2D.ToIndex1D();
                 var rightNode = FindNode(index);
 
                 neighbours.Add(rightNode);
@@ -152,7 +152,7 @@ namespace Lines
             if (index2D.Item1 < rowCount - 1)
             {
                 var bottomIndex2D = Tuple.Create(index2D.Item1 + 1, index2D.Item2);
-                int index = bottomIndex2D.GetIndex1D();
+                int index = bottomIndex2D.ToIndex1D();
                 var bottomNode = FindNode(index);
 
                 neighbours.Add(bottomNode);

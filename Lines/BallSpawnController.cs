@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using static Lines.Settings;
+using static Lines.GameHelper;
 
 namespace Lines
 {
     static class BallSpawnController
     {
-        private static readonly Random random = new Random();
-        private static readonly object syncLock = new object();
-
         public static Ellipse CreateBall()
         {
             var ball = new Ellipse()
             {
-                Fill = new SolidColorBrush(Colors.AliceBlue),
+                //Fill = new SolidColorBrush(color),
                 Stroke = new SolidColorBrush(Colors.Black),
                 IsHitTestVisible = false,
             };
@@ -23,9 +22,9 @@ namespace Lines
 
         public static int GetBallSpawnQty(int min, int max)
         {
-            lock (syncLock)
+            lock (SyncLock)
             {
-                var result = random.Next(min, max + 1);
+                var result = RandomObject.Next(min, max + 1);
 
                 return result;
             }

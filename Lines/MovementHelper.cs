@@ -13,8 +13,8 @@ namespace Lines
             var movementInfoList = new List<MovementInfo>();
             for (int i = 1; i < indices.Count; i++)
             {
-                var firstIndex = indices[i - 1].GetIndex2D();
-                var secondIndex = indices[i].GetIndex2D();
+                var firstIndex = indices[i - 1].ToIndex2D();
+                var secondIndex = indices[i].ToIndex2D();
 
                 var result = secondIndex.Subtract(firstIndex);
 
@@ -49,7 +49,7 @@ namespace Lines
 
         public static int GetIndexByOffset(int currentIndex, Direction direction, int steps, int stepsInRow)
         {
-            var currentIndex2D = currentIndex.GetIndex2D();
+            var currentIndex2D = currentIndex.ToIndex2D();
 
             var resultX = currentIndex2D.Item1;
             var resultY = currentIndex2D.Item2;
@@ -74,7 +74,7 @@ namespace Lines
             }
 
             var resultIndex2D = Tuple.Create(resultX, resultY);
-            var resultIndex = resultIndex2D.GetIndex1D();
+            var resultIndex = resultIndex2D.ToIndex1D();
 
             return resultIndex;
         }

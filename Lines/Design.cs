@@ -23,6 +23,14 @@ namespace Lines
         public static int ZIndexDefault { get { return 1; } }
         public static int ZIndexTop { get { return 2; } }
 
+        public static Color BallColorYellow { get { return GetColor("#f5da46"); } }
+        public static Color BallColorGreen { get { return GetColor("#48e76a"); } }
+        public static Color BallColorRed { get { return GetColor("#d72020"); } }
+        public static Color BallColorBlue { get { return GetColor("#2795ce"); } }
+        public static Color BallColorAliceBlue { get { return Colors.AliceBlue; } }
+        public static Color BallColorBlack { get { return GetColor("#3b3b3b"); } }
+        public static Color BallColorPink { get { return GetColor("#faa7fb"); } }
+
         public static Color GetColor(string hex)
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);

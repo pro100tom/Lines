@@ -7,11 +7,18 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525"
         WindowStyle="None" ResizeMode="NoResize"  
-        WindowStartupLocation="CenterScreen" WindowState="Maximized"
+        WindowStartupLocation="CenterScreen" 
         Loaded="Window_Loaded"
-        ContentRendered="Window_ContentRendered"
+        ContentRendered="Window_ContentRendered" WindowState="Maximized"
         PreviewKeyUp="Window_PreviewKeyUp">
-    <Grid Margin="20">
-        <UniformGrid Name="MainField" Background="AliceBlue" />
+    <Grid>
+        <Canvas Name="Overlay" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Hidden"/>
+        <Border BorderThickness="4" Name="GameOverBorder" BorderBrush="Black" Panel.ZIndex="4" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
+            <TextBlock Name="GameOver" Text="Game Over" Background="AliceBlue" FontSize="48" Padding="20" />
+        </Border>
+        <Grid Margin="20">
+            <UniformGrid Name="MainField" Background="AliceBlue" />
+            <TextBlock Text="Score" Name="Scoreboard" FontSize="48" HorizontalAlignment="Right" TextAlignment="Center"/>
+        </Grid>
     </Grid>
 </Window>

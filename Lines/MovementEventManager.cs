@@ -3,6 +3,9 @@ using System.Windows.Threading;
 
 namespace Lines
 {
+    enum Direction { Left, Up, Right, Down };
+    delegate void MovementEventHandler(double coordinate, Direction direction);
+
     static class MovementEventManager
     {
         public static event DefaultEventHandler NotifyMoveCompleted;
